@@ -786,68 +786,68 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
         }
     }
 
-    /* CAPTURA LIMPIA Y EXACTA DE LA JORNADA ACTUAL SIN SOMBRAS EXTRAÑAS */
-    function generarCapturaJornadaActual() {
-        const area = document.getElementById('areaCapturaJornada');
-        const wrapper = document.getElementById('wrapperCaptura');
-        const tabla = document.getElementById('tablaCapturaPrincipal');
-
-        // Guardamos los estados de diseño originales para restaurarlos después
-        const prevWrapperOverflow = wrapper.style.overflowX;
-        const prevWrapperWidth = wrapper.style.width;
-        const prevTableWidth = tabla.style.width;
-        const prevTableMinWidth = tabla.style.minWidth;
-        const prevAreaBoxShadow = area.style.boxShadow;
-        const prevAreaBackground = area.style.background;
-        const prevAreaBorder = area.style.border;
-
-        // Limpiamos los estilos que generan sombras flotantes y forzamos fondo sólido para la foto
-        wrapper.style.overflowX = 'visible';
-        wrapper.style.width = '100%';
-        tabla.style.width = '100%';
-        tabla.style.minWidth = '100px';
-        
-        area.style.boxShadow = 'none';
-        area.style.border = 'none';
-        area.style.background = '#050e0b'; // Fondo sólido exacto del tema
-
-        // Calculamos el ancho exacto del contenido real
-        const anchoReal = Math.max(area.scrollWidth, area.offsetWidth, 900);
-        const altoReal = area.scrollHeight;
-
-        html2canvas(area, { 
-            scale: 2, 
-            backgroundColor: '#050e0b', 
-            useCORS: true,
-            width: anchoReal,
-            height: altoReal,
-            windowWidth: anchoReal + 100
-        }).then(canvas => {
-            // Restauramos todos los estilos originales inmediatamente
-            wrapper.style.overflowX = prevWrapperOverflow;
-            wrapper.style.width = prevWrapperWidth;
-            tabla.style.width = prevTableWidth;
-            tabla.style.minWidth = prevTableMinWidth;
-            area.style.boxShadow = prevAreaBoxShadow;
-            area.style.border = prevAreaBorder;
-            area.style.background = prevAreaBackground;
-
-            const enlace = document.createElement('a');
-            enlace.download = `control_jornada_${new Date().toISOString().slice(0,10)}.png`;
-            enlace.href = canvas.toDataURL('image/png');
-            enlace.click();
-        }).catch(err => {
-            console.error("Error al generar la captura:", err);
-            // Restaurar en caso de error también
-            wrapper.style.overflowX = prevWrapperOverflow;
-            wrapper.style.width = prevWrapperWidth;
-            tabla.style.width = prevTableWidth;
-            tabla.style.minWidth = prevTableMinWidth;
-            area.style.boxShadow = prevAreaBoxShadow;
-            area.style.border = prevAreaBorder;
-            area.style.background = prevAreaBackground;
-        });
+    /* CAPTURA AISLADA Y CLONADA PARA ELIMINAR CUALQUIER SOMBRA O CORTE */
+function generarCapturaJornadaActual() {
+    const areaOriginal = document.getElementById('areaCapturaJornada');
+    if (!areaOriginal || registros.length === 0) {
+        alert("No hay datos suficientes para generar la captura.");
+        return;
     }
+
+    // Creamos un contenedor temporal completamente aislado fuera de la vista
+    const contenedorTemporal = document.createElement('div');
+    contenedorTemporal.style.position = 'absolute';
+    contenedorTemporal.style.left = '-9999px';
+    contenedorTemporal.style.top = '0';
+    contenedorTemporal.style.width = '950px'; // Ancho fijo perfecto para la captura
+    contenedorTemporal.style.backgroundColor = '#050e0b';
+    contenedorTemporal.style.padding = '20px';
+    contenedorTemporal.style.borderRadius = '0px';
+
+    // Clonamos exactamente el contenido de la jornada actual
+    const clon = areaOriginal.cloneNode(true);
+    
+    // Removemos o estilizamos los elementos interactivos dentro del clon para que salgan como texto limpio
+    clon.style.boxShadow = 'none';
+    clon.style.border = 'none';
+    clon.style.background = '#050e0b';
+
+    // Aseguramos que los inputs y textareas dentro del clon se vean estáticos y limpios en la foto
+    const inputsClon = clon.querySelectorAll('input, select, textarea');
+    inputsClon.forEach(el => {
+        el.style.border = 'none';
+        el.style.background = 'transparent';
+        el.style.boxShadow = 'none';
+        el.style.color = '#e2f0ea';
+        if(el.tagName === 'SELECT') {
+            // Reemplazar select por texto plano de su valor seleccionado si se desea, o dejarlo sin bordes
+            el.style.appearance = 'none';
+        }
+    });
+
+    contenedorTemporal.appendChild(clon);
+    document.body.appendChild(contenedorTemporal);
+
+    html2canvas(clon, { 
+        scale: 2, 
+        backgroundColor: '#050e0b', 
+        useCORS: true,
+        logging: false
+    }).then(canvas => {
+        // Removemos el contenedor temporal
+        document.body.removeChild(contenedorTemporal);
+
+        const enlace = document.createElement('a');
+        enlace.download = `control_jornada_${new Date().toISOString().slice(0,10)}.png`;
+        enlace.href = canvas.toDataURL('image/png');
+        enlace.click();
+    }).catch(err => {
+        console.error("Error al generar la captura:", err);
+        if (document.body.contains(contenedorTemporal)) {
+            document.body.removeChild(contenedorTemporal);
+        }
+    });
+}
 
     function guardarJornadaCierre() {
         if (registros.length === 0) { alert("No hay jugadas para guardar."); return; }
