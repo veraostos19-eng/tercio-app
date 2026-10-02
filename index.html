@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TERCIO - Control de Jugadas y Reportes</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Librería para generar capturas de elementos DOM -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- SDKs de Firebase (Versión Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    
+    <style>
+      /* ==========================================================
+           TERCIO SaaS - REDISEÑO GLASSMORPHISM & TICKET VIP V3
+           ========================================================== */
+
+        :root {
+            --bg-dark-deep: #050e0b; /* Fondo aún más profundo tipo mesa de juego */
+            --bg-glass-card: rgba(10, 28, 21, 0.55); /* Cristal traslúcido aireado */
+            --bg-glass-card-solid: rgba(10, 28, 21, 0.85); 
+            --border-glass: rgba(255, 255, 255, 0.1); 
+            --border-glass-glow: rgba(52, 211, 153, 0.35); 
+            --text-main: #e2f0ea;
+            --text-muted: #8ba89a;
+            --accent-green: #34d399;
+            --accent-red: #f87171;
+            --accent-cyan: #2dd4bf; 
+        }
+
+        body {
+            font-family: 'Inter', sans-serif !important;
+            background-color: var(--bg-dark-deep) !important;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(52, 211, 153, 0.09) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(45, 212, 191, 0.06) 0%, transparent 45%) !important;
+            color: var(--text-main) !important;
+            margin: 0;
+            padding: 25px;
+        }
+
+        .container {
+            max-width: 1350px;
+            margin: 0 auto;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px; 
+            gap: 24px;
+            align-items: start;
+        }
+
+        .col-main { min-width: 0; }
+        .col-sidebar { position: sticky; top: 25px; }
+
+        /* Contenedores generales estilo Glass */
+        .form-section, .table-responsive-wrapper, #cajaBalanceTotal, .sheet-container, .week-accordion, .block-header, .sheet-global-total {
+            background: var(--bg-glass-card) !important;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border-glass) !important;
+            border-radius: 18px;
+            box-shadow: 0 20px 45px 0 rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+            transition: all 0.3s ease;
+        }
+
+        .form-section:hover, .table-responsive-wrapper:hover {
+            border-color: var(--border-glass-glow) !important;
+            box-shadow: 0 24px 55px 0 rgba(0, 0, 0, 0.6), 0 0 20px rgba(52, 211, 153, 0.1);
+        }
+
+        .table-responsive-wrapper {
+            overflow-x: auto;
+            border-radius: 18px 18px 0 0 !important;
+            border-bottom: none !important;
+        }
+
+        /* Estilo de Tablas convertido a "Pases VIP / Tickets de Apuesta" */
+        table, .tabla-jornada, .history-table {
+            width: 100%;
+            min-width: 750px; 
+            border-collapse: separate;
+            border-spacing: 0;
+            background: transparent !important;
+        }
+
+        th, .tabla-jornada th {
+            background: rgba(5, 14, 11, 0.85) !important;
+            color: var(--accent-cyan) !important;
+            font-weight: 600;
+            padding: 16px 18px;
+            text-align: left;
+            border-bottom: 1px solid rgba(45, 212, 191, 0.3);
+            font-size: 13px;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 16px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 13px;
+            background: rgba(10, 28, 21, 0.25);
+        }
+
+        /* Efecto de ticket individual al pasar el mouse por las filas */
+        tr:hover td {
+            background: rgba(52, 211, 153, 0.04) !important;
+        }
+
+        .monto-positivo { color: var(--accent-green) !important; }
+        .monto-negativo { color: var(--accent-red) !important; }
+
+        /* Formulario flotante elegante */
+        .form-section { padding: 24px; margin-bottom: 24px; }
+        .row { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+        .col { flex: 1; min-width: 140px; }
+        
+        label { 
+            display: block; 
+            margin-bottom: 6px; 
+            font-weight: 600; 
+            font-size: 12px; 
+            color: var(--text-muted); 
+            letter-spacing: 0.4px; 
+        }
+        
+        input, select { 
+            width: 100%; 
+            padding: 12px 14px; 
+            box-sizing: border-box; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 12px; 
+            font-family: inherit; 
+            font-size: 13px; 
+            background: rgba(5, 14, 11, 0.7) !important; 
+            color: var(--text-main) !important; 
+            transition: all 0.2s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent-green) !important;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.25);
+        }
+
+        textarea, .form-section textarea {
+            width: 100% !important;
+            min-height: 105px !important;
+            resize: vertical !important;
+            background: rgba(5, 14, 11, 0.7) !important;
+            color: var(--text-main) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 12px !important;
+            padding: 12px !important;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 13px !important;
+            line-height: 1.5;
+        }
+
+        .tabla-input-inline {
+            background: rgba(5, 14, 11, 0.5) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            color: var(--text-main) !important;
+            padding: 8px 10px !important;
+            border-radius: 10px !important;
+            font-family: inherit !important;
+            font-size: 13px !important;
+            transition: all 0.2s ease;
+        }
+        .tabla-input-inline:hover {
+            border-color: rgba(52, 211, 153, 0.3) !important;
+        }
+        .tabla-input-inline:focus {
+            border-color: var(--accent-green) !important;
+            background: rgba(5, 14, 11, 0.95) !important;
+            box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.25);
+        }
+
+        /* ==========================================================
+           BURBUJA DE CHAT FLOTANTE ESTILO WHATSAPP (iOS Glassmorphism)
+           ========================================================== */
+        .ticket-box {
+            background: rgba(10, 28, 21, 0.75) !important;
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(37, 211, 102, 0.35) !important;
+            border-radius: 20px !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 25px rgba(37, 211, 102, 0.12) !important;
+            padding: 0 !important;
+            overflow: hidden;
+            margin-bottom: 24px;
+            display: none;
+        }
+
+        .whatsapp-bubble-header {
+            background: linear-gradient(135deg, rgba(37, 211, 102, 0.25), rgba(18, 140, 126, 0.35));
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(37, 211, 102, 0.2);
+            font-weight: 600;
+            font-size: 13px;
+            color: #25d366;
+        }
+
+        .whatsapp-bubble-body {
+            padding: 18px;
+            font-family: 'Courier New', Courier, monospace !important;
+            color: var(--text-main) !important;
+            white-space: pre-wrap !important;
+            word-break: break-word !important;
+            max-height: 280px;
+            overflow-y: auto;
+            font-size: 12.5px;
+        }
+
+        .whatsapp-bubble-footer {
+            padding: 12px 18px;
+            background: rgba(5, 14, 11, 0.6);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Selectores de estatus tipo "Ficha de Casino" */
+        .status-select {
+            background: rgba(5, 14, 11, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 8px 12px;
+            color: var(--text-main);
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.2s ease;
+        }
+        .status-select:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 4px 15px rgba(45, 212, 191, 0.2);
+        }
+
+        .block-header { 
+            background: rgba(10, 28, 21, 0.8) !important; 
+            color: var(--text-main); 
+            text-align: center; 
+            padding: 16px 20px; 
+            border-radius: 14px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            margin-bottom: 16px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        button { 
+            background: linear-gradient(135deg, #34d399, #059669); 
+            color: white; 
+            border: none; 
+            padding: 12px 18px; 
+            width: 100%; 
+            border-radius: 12px; 
+            font-size: 13px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            transition: all 0.2s ease;
+            box-shadow: 0 6px 20px rgba(52, 211, 153, 0.3);
+            margin-top: 6px;
+            margin-bottom: 6px;
+        }
+        button:hover { 
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(52, 211, 153, 0.4);
+        }
+        
+        .btn-whatsapp { 
+            background: linear-gradient(135deg, #25d366, #1ebe5d) !important; 
+            margin-top: 0 !important; 
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3) !important;
+        }
+
+        .btn-delete-row {
+            background: var(--accent-red) !important;
+            padding: 8px 12px !important;
+            font-size: 11px !important;
+            width: auto !important;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(248, 113, 113, 0.3);
+        }
+
+        #cajaBalanceTotal, .summary-box {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            border-radius: 0 0 18px 18px !important;
+            padding: 18px 24px !important;
+            margin-top: 0 !important;
+            margin-bottom: 28px !important;
+            border-top: none !important;
+            background: var(--bg-glass-card-solid) !important;
+        }
+
+        #cajaBalanceTotal span:first-child {
+            color: var(--text-muted) !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.5px !important;
+        }
+
+        #balanceTotal {
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            font-family: 'Courier New', Courier, monospace !important;
+        }
+
+        .sheet-container { margin-top: 30px; }
+
+        .sheet-header-main {
+            background: rgba(10, 28, 21, 0.9);
+            color: var(--accent-cyan);
+            padding: 16px;
+            font-weight: bold;
+            border-radius: 14px 14px 0 0;
+            border: 1px solid rgba(45, 212, 191, 0.3);
+            text-align: center;
+            letter-spacing: 0.5px;
+            font-size: 14px;
+        }
+
+        .week-accordion {
+            margin-bottom: 14px;
+            border-radius: 14px;
+            overflow: hidden;
+            background: var(--bg-glass-card) !important;
+        }
+        .week-accordion-header {
+            padding: 14px 18px;
+            background: rgba(5, 14, 11, 0.7);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+        .week-accordion-content {
+            display: none;
+            padding: 16px;
+        }
+        .week-accordion.active .week-accordion-content {
+            display: block;
+        }
+
+        .sheet-global-total {
+            background: rgba(5, 14, 11, 0.9);
+            padding: 18px 22px;
+            border-radius: 14px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            border: 1px solid rgba(52, 211, 153, 0.35);
+            margin-top: 18px;
+        }
+        .editable-input {
+            background: rgba(5, 14, 11, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 8px 10px;
+            border-radius: 10px;
+            width: 100%;
+            font-size: 13px;
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 12px; }
+            .container { max-width: 100%; }
+            .dashboard-grid { display: block; }
+            .col-sidebar { position: static; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="block-header" style="margin-bottom: 24px;">
+        <span>TERCIO - Registro y Control de Jornada</span>
+        <span id="syncStatusBadge" style="font-size: 12px; color: var(--accent-cyan);">☁️ Conectado a la Nube</span>
+    </div>
+
+    <!-- ESTRUCTURA DE DOS COLUMNAS (DASHBOARD GRID) -->
+    <div class="dashboard-grid">
+        
+        <!-- COLUMNA IZQUIERDA -->
+        <div class="col-main">
+            <div id="areaCapturaJornada">
+                <div class="block-header" style="margin-bottom: 12px;">
+                    Historial y Control de la Jornada Actual
+                </div>
+                
+                <div class="table-responsive-wrapper" id="wrapperCaptura">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 14%;">Fecha / Día</th>
+                                <th style="width: 28%;">Descripción (Editable)</th>
+                                <th style="width: 12%;" class="text-right">Monto apostado</th>
+                                <th style="width: 14%;" class="text-right">Ganancia Potencial</th>
+                                <th style="width: 15%;" class="text-center">Resultado</th>
+                                <th style="width: 10%;" class="text-right">Neto ($)</th>
+                                <th style="width: 7%;" class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpoTabla">
+                            <tr>
+                                <td colspan="7" class="text-center" style="color: var(--text-muted); padding: 25px;">No hay jugadas registradas en la jornada actual.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="cajaBalanceTotal" class="summary-box">
+                    <span>BALANCE NETO DE LA JORNADA:</span>
+                    <span id="balanceTotal">$0.00</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 28px;">
+                <button onclick="generarCapturaJornadaActual()">📸 Generar Captura (Jornada Actual)</button>
+                <button onclick="guardarJornadaCierre()" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); box-shadow: 0 4px 15px rgba(14, 165, 233, 0.25);">💾 Guardar Jornada y Cerrar Día</button>
+                <button onclick="reiniciarJornada()" style="background: linear-gradient(135deg, #64748b, #475569); box-shadow: 0 4px 15px rgba(100, 116, 139, 0.25);">Reiniciar Jornada Actual</button>
+            </div>
+
+            <div class="sheet-container">
+                <div class="sheet-header-main">
+                    RESUMEN SEMANAL (LUNES A DOMINGO)
+                </div>
+                <div id="contenedorAcordeonesSemana">
+                    <div style="text-align: center; color: var(--text-muted); padding: 25px;">No hay jornadas guardadas en el historial...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: Widgets Flotantes -->
+        <div class="col-sidebar">
+            <div class="form-section">
+                <div class="block-header" style="margin-bottom: 14px; font-size: 13px;">📝 Nueva Jugada</div>
+                <div class="row">
+                    <div class="col">
+                        <label for="fechaJugada">Fecha de la Jugada:</label>
+                        <input type="date" id="fechaJugada">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <label for="montoApostado">Monto Apostado ($):</label>
+                        <input type="number" id="montoApostado" placeholder="Ej: 15000">
+                    </div>
+                    <div class="col">
+                        <label for="gananciaPotencialManual">Ganancia Potencial ($):</label>
+                        <input type="number" step="0.01" id="gananciaPotencialManual" placeholder="Opcional">
+                    </div>
+                </div>
+                <div style="margin-bottom: 14px;">
+                    <label for="descripcionJugada">Descripción de la jugada:</label>
+                    <textarea id="descripcionJugada" placeholder="Ej:
+ALTA D DOGERS MITAD (4) -105"></textarea>
+                </div>
+                <button onclick="agregarJugada()">Procesar Jugada y Agregar</button>
+            </div>
+
+            <!-- BURBUJA DE CHAT FLOTANTE ESTILO WHATSAPP (iOS Glassmorphism) -->
+            <div id="contenedorTicket" class="ticket-box">
+                <div class="whatsapp-bubble-header">
+                    <span>🟢</span> <span>Plano Acumulativo de WhatsApp</span>
+                </div>
+                <div id="textoTicketGenerado" class="whatsapp-bubble-body"></div>
+                <div class="whatsapp-bubble-footer">
+                    <button class="btn-whatsapp" onclick="copiarTicketActual()">📋 Copiar Plano al Portapapeles</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    document.getElementById('fechaJugada').valueAsDate = new Date();
+
+    let registros = [];
+    let historicoSemanal = [];
+    let db = null;
+
+    try {
+        firebase.initializeApp({
+            apiKey: "AIzaSyChbio-uzcHkQYgb0vAJo52nXtk7v3iImM",
+            authDomain: "terciodb-ee63e.firebaseapp.com",
+            projectId: "terciodb-ee63e",
+            storageBucket: "terciodb-ee63e.firebasestorage.app",
+            messagingSenderId: "164261947006",
+            appId: "1:164261947006:web:e87e668486f366b9345a2f"
+        });
+        db = firebase.firestore();
+        sincronizarDesdeNube();
+    } catch (error) {
+        console.error("Error al inicializar Firebase:", error);
+    }
+
+    function sincronizarDatos() {
+        if (db) {
+            db.collection('jornada_activa_app').doc('estado_actual').set({
+                registros: registros,
+                historicoSemanal: historicoSemanal,
+                actualizado: new Date().toISOString()
+            }).catch(err => console.error("Error al guardar en Firestore:", err));
+        }
+    }
+
+    function sincronizarDesdeNube() {
+        if (!db) return;
+        db.collection('jornada_activa_app').doc('estado_actual').get().then(doc => {
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.registros) registros = data.registros;
+                if (data.historicoSemanal) historicoSemanal = data.historicoSemanal;
+                actualizarTablaVisual();
+                actualizarPlanoAcumulativo();
+                actualizarTablaSemanalVisual();
+            }
+        }).catch(err => console.error("Error al leer desde Firestore:", err));
+    }
+
+    function convertirAmericanoADecimal(cuota) {
+        if (cuota > 0) return (cuota / 100) + 1;
+        return (100 / Math.abs(cuota)) + 1;
+    }
+
+    function obtenerNombreDia(fechaStr) {
+        if (!fechaStr) return '';
+        const partes = fechaStr.split('T')[0].split('-');
+        if (partes.length !== 3) return '';
+        const fecha = new Date(parseInt(partes[0], 10), parseInt(partes[1], 10) - 1, parseInt(partes[2], 10));
+        if (isNaN(fecha.getTime())) return '';
+        const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        return dias[fecha.getDay()];
+    }
+
+    function obtenerInicioFinSemana(fechaStr) {
+        const partes = fechaStr.split('T')[0].split('-');
+        const fecha = new Date(parseInt(partes[0], 10), parseInt(partes[1], 10) - 1, parseInt(partes[2], 10));
+        let diaSemana = fecha.getDay();
+        let distanciaAlLunes = diaSemana === 0 ? 6 : diaSemana - 1;
+        let lunes = new Date(fecha);
+        lunes.setDate(fecha.getDate() - distanciaAlLunes);
+        let domingo = new Date(lunes);
+        domingo.setDate(lunes.getDate() + 6);
+        return {
+            inicio: lunes.toISOString().slice(0, 10),
+            fin: domingo.toISOString().slice(0, 10),
+            clave: `${lunes.toISOString().slice(0, 10)}_${domingo.toISOString().slice(0, 10)}`
+        };
+    }
+
+    function formatearFechaCorta(fechaStr) {
+        if (!fechaStr) return '';
+        const p = fechaStr.split('-');
+        if (p.length !== 3) return fechaStr;
+        const meses = ['Jan', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        return `${parseInt(p[2], 10)} ${meses[parseInt(p[1], 10) - 1]}`;
+    }
+
+    function calcularGananciaEstandar(monto, lineasTexto) {
+        let decimalTotal = 1;
+        let lineas = lineasTexto.split('\n').filter(l => l.trim() !== '');
+        if (lineas.length > 1) {
+            lineas.forEach(l => {
+                const match = l.match(/([+-]?\d+)\s*$/);
+                if (match) decimalTotal *= convertirAmericanoADecimal(parseInt(match[1]));
+            });
+            return monto * (decimalTotal - 1);
+        } else if (lineas.length === 1) {
+            const match = lineas[0].match(/([+-]?\d+)\s*$/);
+            if (match) {
+                let c = parseInt(match[1]);
+                return c > 0 ? (monto * c) / 100 : (monto * 100) / Math.abs(c);
+            }
+        }
+        return 0;
+    }
+
+    function agregarJugada() {
+        const fechaVal = document.getElementById('fechaJugada').value;
+        const monto = parseFloat(document.getElementById('montoApostado').value);
+        const desc = document.getElementById('descripcionJugada').value.trim();
+        const gananciaManual = parseFloat(document.getElementById('gananciaPotencialManual').value);
+
+        if (!fechaVal || isNaN(monto) || !desc) {
+            alert("Por favor completa la fecha, el monto apostado y la descripción.");
+            return;
+        }
+
+        let gananciaCalc = calcularGananciaEstandar(monto, desc);
+        let gananciaFinal = !isNaN(gananciaManual) ? gananciaManual : gananciaCalc;
+        gananciaFinal = parseFloat(gananciaFinal.toFixed(2));
+
+        registros.push({
+            fecha: fechaVal,
+            dia: obtenerNombreDia(fechaVal),
+            descripcion: desc,
+            monto: monto,
+            gananciaPotencial: gananciaFinal,
+            estatus: 'PENDIENTE',
+            desgloseLineas: null
+        });
+
+        sincronizarDatos();
+        document.getElementById('montoApostado').value = '';
+        document.getElementById('descripcionJugada').value = '';
+        document.getElementById('gananciaPotencialManual').value = '';
+        document.getElementById('descripcionJugada').focus();
+
+        actualizarTablaVisual();
+        actualizarPlanoAcumulativo();
+    }
+
+    function actualizarCampoJugada(index, campo, valor) {
+        if (campo === 'descripcion') registros[index].descripcion = valor;
+        else if (campo === 'monto') registros[index].monto = parseFloat(valor) || 0;
+        else if (campo === 'gananciaPotencial') registros[index].gananciaPotencial = parseFloat(valor) || 0;
+        sincronizarDatos();
+        actualizarTablaVisual();
+        actualizarPlanoAcumulativo();
+    }
+
+    function eliminarJugadaIndividual(index) {
+        if (confirm(`¿Estás segura de eliminar la Jugada #${index + 1}?`)) {
+            registros.splice(index, 1);
+            sincronizarDatos();
+            actualizarTablaVisual();
+            actualizarPlanoAcumulativo();
+        }
+    }
+
+    function cambiarEstatus(index, nuevoEstatus) {
+        let reg = registros[index];
+        reg.estatus = nuevoEstatus;
+        sincronizarDatos();
+        actualizarTablaVisual();
+        actualizarPlanoAcumulativo();
+    }
+
+    function calcularNetoJugada(reg) {
+        const montoVal = parseFloat(reg.monto || reg.montoApostado) || 0;
+        const gananciaVal = parseFloat(reg.gananciaPotencial) || 0;
+        if (reg.estatus === 'GANADA') return gananciaVal;
+        if (reg.estatus === 'PERDIDA') return -montoVal;
+        return 0;
+    }
+
+    function actualizarPlanoAcumulativo() {
+        const contenedor = document.getElementById('contenedorTicket');
+        const textoDiv = document.getElementById('textoTicketGenerado');
+        if (registros.length === 0) {
+            contenedor.style.display = 'none';
+            textoDiv.textContent = '';
+            return;
+        }
+
+        let planoTexto = "⚾ *REPORTE DE JORNADA* ⚾️\n";
+        registros.forEach((reg, i) => {
+            let textoEstatus = "⏳ PENDIENTE";
+            if (reg.estatus === 'GANADA') textoEstatus = "✅ GANADA";
+            else if (reg.estatus === 'PERDIDA') textoEstatus = "❌ PERDIDA";
+            else if (reg.estatus === 'PUSH') textoEstatus = "🔄 PUSH";
+
+            let montoVal = parseFloat(reg.monto || reg.montoApostado) || 0;
+            planoTexto += `\n-----------------------------------\n`;
+            planoTexto += `*Jugada #${i + 1}* (${reg.fecha} - ${reg.dia})\n\n`;
+            planoTexto += `${reg.descripcion}\n\n`;
+            planoTexto += `🔹 *Arriesga:* $${montoVal.toLocaleString('en-US', {minimumFractionDigits: 2})}\n`;
+            planoTexto += `🔹 *Ganancia:* $${parseFloat(reg.gananciaPotencial).toLocaleString('en-US', {minimumFractionDigits: 2})}\n`;
+            planoTexto += `📌 *Estatus:* ${textoEstatus}`;
+        });
+
+        textoDiv.textContent = planoTexto;
+        contenedor.style.display = 'block';
+    }
+
+    function copiarTicketActual() {
+        const textoDiv = document.getElementById('textoTicketGenerado');
+        if (!textoDiv.textContent) return;
+        navigator.clipboard.writeText(textoDiv.textContent).then(() => {
+            alert("¡Plano acumulativo copiado al portapapeles!");
+        });
+    }
+
+    function actualizarTablaVisual() {
+        const tbody = document.getElementById('cuerpoTabla');
+        const spanBalance = document.getElementById('balanceTotal');
+        if (!tbody) return;
+
+        if (registros.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="color: var(--text-muted); padding: 25px;">No hay jugadas registradas en la jornada actual.</td></tr>`;
+            if (spanBalance) { spanBalance.textContent = '$0.00'; spanBalance.className = ''; }
+            return;
+        }
+
+        tbody.innerHTML = '';
+        let balanceGeneral = 0;
+
+        registros.forEach((reg, index) => {
+            const resultadoNeto = calcularNetoJugada(reg);
+            balanceGeneral += resultadoNeto;
+            const montoVal = parseFloat(reg.monto || reg.montoApostado) || 0;
+            const gananciaVal = parseFloat(reg.gananciaPotencial) || 0;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${reg.fecha || ''}</td>
+                <td>
+                    <textarea class="tabla-input-inline" style="width: 100%; min-height: 55px; resize: vertical;" oninput="actualizarCampoJugada(${index}, 'descripcion', this.value)">${reg.descripcion || ''}</textarea>
+                </td>
+                <td class="text-right">
+                    <input type="number" class="tabla-input-inline text-right" style="width: 100px;" value="${montoVal}" oninput="actualizarCampoJugada(${index}, 'monto', this.value)">
+                </td>
+                <td class="text-right">
+                    <input type="number" step="0.01" class="tabla-input-inline text-right" style="width: 100px;" value="${gananciaVal}" oninput="actualizarCampoJugada(${index}, 'gananciaPotencial', this.value)">
+                </td>
+                <td class="text-center">
+                    <select class="status-select" onchange="cambiarEstatus(${index}, this.value)">
+                        <option value="PENDIENTE" ${reg.estatus === 'PENDIENTE' ? 'selected' : ''}>⏳ PENDIENTE</option>
+                        <option value="GANADA" ${reg.estatus === 'GANADA' ? 'selected' : ''}>✅ GANADA</option>
+                        <option value="PERDIDA" ${reg.estatus === 'PERDIDA' ? 'selected' : ''}>❌ PERDIDA</option>
+                        <option value="PUSH" ${reg.estatus === 'PUSH' ? 'selected' : ''}>🔄 PUSH</option>
+                    </select>
+                </td>
+                <td class="text-right ${resultadoNeto > 0 ? 'monto-positivo' : (resultadoNeto < 0 ? 'monto-negativo' : '')}" style="font-weight: bold;">
+                    ${resultadoNeto > 0 ? '+' : ''}$${resultadoNeto.toLocaleString('en-US', {minimumFractionDigits: 2})}
+                </td>
+                <td class="text-center">
+                    <button class="btn-delete-row" onclick="eliminarJugadaIndividual(${index})" title="Eliminar">🗑️</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        if (spanBalance) {
+            spanBalance.textContent = (balanceGeneral >= 0 ? '$' : '-$') + Math.abs(balanceGeneral).toLocaleString('en-US', {minimumFractionDigits: 2});
+            spanBalance.className = balanceGeneral > 0 ? 'monto-positivo' : (balanceGeneral < 0 ? 'monto-negativo' : '');
+        }
+    }
+
+    function generarCapturaJornadaActual() {
+        const area = document.getElementById('areaCapturaJornada');
+        const wrapper = document.getElementById('wrapperCaptura');
+        const originalOverflow = wrapper.style.overflowX;
+        const originalWidth = wrapper.style.width;
+        wrapper.style.overflowX = 'visible';
+        wrapper.style.width = '750px';
+
+        html2canvas(area, { scale: 2, backgroundColor: '#050e0b', useCORS: true, windowWidth: 900 }).then(canvas => {
+            wrapper.style.overflowX = originalOverflow;
+            wrapper.style.width = originalWidth;
+            const enlace = document.createElement('a');
+            enlace.download = `control_jornada_${new Date().toISOString().slice(0,10)}.png`;
+            enlace.href = canvas.toDataURL('image/png');
+            enlace.click();
+        }).catch(() => {
+            wrapper.style.overflowX = originalOverflow;
+            wrapper.style.width = originalWidth;
+        });
+    }
+
+    function guardarJornadaCierre() {
+        if (registros.length === 0) { alert("No hay jugadas para guardar."); return; }
+        let totalNetoJornada = 0;
+        registros.forEach(reg => totalNetoJornada += calcularNetoJugada(reg));
+
+        historicoSemanal.push({
+            id: Date.now(),
+            fechaCierre: registros[0].fecha,
+            diaCierre: obtenerNombreDia(registros[0].fecha),
+            textoDetalle: `${registros.length} jugada(s)`,
+            totalNeto: parseFloat(totalNetoJornada.toFixed(2)),
+            jugadasRespaldo: [...registros]
+        });
+
+        sincronizarDatos();
+        alert("¡Jornada guardada en el resumen semanal!");
+        reiniciarJornada();
+        actualizarTablaSemanalVisual();
+    }
+
+    function actualizarTablaSemanalVisual() {
+        const contenedor = document.getElementById('contenedorAcordeonesSemana');
+        if (!contenedor) return;
+        if (historicoSemanal.length === 0) {
+            contenedor.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 25px;">No hay jornadas guardadas en el historial...</div>`;
+            return;
+        }
+
+        let semanasMap = {};
+        historicoSemanal.forEach((item, hIndex) => {
+            let rango = obtenerInicioFinSemana(item.fechaCierre);
+            if (!semanasMap[rango.clave]) semanasMap[rango.clave] = { inicio: rango.inicio, fin: rango.fin, jornadas: [] };
+            semanasMap[rango.clave].jornadas.push({ ...item, originalIndex: hIndex });
+        });
+
+        contenedor.innerHTML = '';
+        let sumaTotalGeneral = 0;
+        Object.keys(semanasMap).sort().reverse().forEach(clave => {
+            let semana = semanasMap[clave];
+            let totalNetoSemana = 0;
+            semana.jornadas.forEach(j => totalNetoSemana += j.totalNeto);
+            sumaTotalGeneral += totalNetoSemana;
+
+            let colorSemana = totalNetoSemana >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+            let textoMontoSemana = (totalNetoSemana >= 0 ? '$' : '-$') + Math.abs(totalNetoSemana).toLocaleString('en-US', {minimumFractionDigits: 2});
+
+            let divAcordeon = document.createElement('div');
+            divAcordeon.className = 'week-accordion';
+            divAcordeon.innerHTML = `
+                <div class="week-accordion-header" onclick="toggleAcordeon(this)">
+                    <span style="font-size: 13px;">📅 ${formatearFechaCorta(semana.inicio)} al ${formatearFechaCorta(semana.fin)}</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="color: ${colorSemana}; font-size: 13px; font-weight: bold;">${textoMontoSemana}</span>
+                        <span>▼</span>
+                    </div>
+                </div>
+                <div class="week-accordion-content">
+                    <table>
+                        <thead><tr><th>Fecha</th><th>Día</th><th>Detalle</th><th class="text-right">Monto</th></tr></thead>
+                        <tbody>
+                            ${semana.jornadas.map(j => `
+                                <tr>
+                                    <td><input type="text" class="editable-input" value="${j.fechaCierre}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'fechaCierre', this.value)"></td>
+                                    <td style="font-weight: bold; color: var(--accent-cyan);">${j.diaCierre}</td>
+                                    <td><input type="text" class="editable-input" value="${j.textoDetalle}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'textoDetalle', this.value)"></td>
+                                    <td class="text-right" style="font-weight: bold; color: ${j.totalNeto >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${(j.totalNeto >= 0 ? '$' : '-$') + Math.abs(j.totalNeto).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            contenedor.appendChild(divAcordeon);
+        });
+
+        let divGlobal = document.createElement('div');
+        divGlobal.className = 'sheet-global-total';
+        divGlobal.innerHTML = `<span>BALANCE TOTAL ACUMULADO:</span><span style="color: ${sumaTotalGeneral >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${(sumaTotalGeneral >= 0 ? '$' : '-$') + Math.abs(sumaTotalGeneral).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>`;
+        contenedor.appendChild(divGlobal);
+    }
+
+    function toggleAcordeon(header) {
+        const acc = header.parentElement;
+        acc.classList.toggle('active');
+        Array.from(acc.parentElement.children).forEach(h => {
+            if (h !== acc && h.classList.contains('week-accordion')) h.classList.remove('active');
+        });
+    }
+
+    function actualizarHistorialCampo(index, campo, valor) {
+        historicoSemanal[index][campo] = valor;
+        sincronizarDatos();
+    }
+
+    function reiniciarJornada() {
+        if (confirm("¿Reiniciar jornada actual?")) {
+            registros = [];
+            sincronizarDatos();
+            actualizarTablaVisual();
+            actualizarPlanoAcumulativo();
+        }
+    }
+</script>
+
+</body>
+</html>
