@@ -81,12 +81,20 @@
             border-bottom: none !important;
         }
 
+        /* Tabla principal de escritorio */
         table, .tabla-jornada, .history-table {
             width: 100%;
             min-width: 750px; 
             border-collapse: separate;
             border-spacing: 0;
             background: transparent !important;
+        }
+
+        /* CORRECCIÓN CRÍTICA MÓVIL: Forzar que la tabla del acordeón semanal sea fluida y no tenga min-width de 750px */
+        .week-accordion-content table {
+            min-width: 100% !important;
+            width: 100% !important;
+            table-layout: fixed !important;
         }
 
         th, .tabla-jornada th {
@@ -180,22 +188,18 @@
             box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.25);
         }
 
-        /* Estilos móviles optimizados para acordeón semanal */
-        .week-accordion-content table {
-            width: 100%;
-            table-layout: fixed;
-        }
+        /* Anchos optimizados para celdas del acordeón móvil */
         .week-accordion-content th, .week-accordion-content td {
             padding: 8px 4px !important;
-            font-size: 11.5px !important;
+            font-size: 11px !important;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        .col-fecha-mob { width: 24%; }
-        .col-dia-mob { width: 22%; }
+        .col-fecha-mob { width: 22%; }
+        .col-dia-mob { width: 20%; }
         .col-detalle-mob { width: 24%; }
-        .col-monto-mob { width: 30%; text-align: right; }
+        .col-monto-mob { width: 34%; text-align: right; }
 
         .editable-input-fecha {
             background: rgba(5, 14, 11, 0.6);
@@ -204,7 +208,7 @@
             padding: 4px;
             border-radius: 6px;
             width: 100%;
-            font-size: 11px;
+            font-size: 10.5px;
         }
 
         .dia-semana-resumen {
@@ -377,7 +381,7 @@
         }
         .week-accordion-content {
             display: none;
-            padding: 16px;
+            padding: 12px;
         }
         .week-accordion.active .week-accordion-content {
             display: block;
