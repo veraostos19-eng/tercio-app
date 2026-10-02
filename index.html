@@ -81,7 +81,6 @@
             border-bottom: none !important;
         }
 
-        /* Tabla principal de escritorio */
         table, .tabla-jornada, .history-table {
             width: 100%;
             min-width: 750px; 
@@ -90,11 +89,15 @@
             background: transparent !important;
         }
 
-        /* CORRECCIÓN CRÍTICA MÓVIL: Forzar que la tabla del acordeón semanal sea fluida y no tenga min-width de 750px */
+        /* Contenedor con scroll interno para la tabla del acordeón, garantizando acceso a todas las funciones */
+        .week-accordion-table-wrapper {
+            overflow-x: auto;
+            width: 100%;
+        }
+
         .week-accordion-content table {
-            min-width: 100% !important;
+            min-width: 650px !important; /* Permite ver holgadamente todas las columnas y opciones */
             width: 100% !important;
-            table-layout: fixed !important;
         }
 
         th, .tabla-jornada th {
@@ -188,27 +191,14 @@
             box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.25);
         }
 
-        /* Anchos optimizados para celdas del acordeón móvil */
-        .week-accordion-content th, .week-accordion-content td {
-            padding: 8px 4px !important;
-            font-size: 11px !important;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .col-fecha-mob { width: 22%; }
-        .col-dia-mob { width: 20%; }
-        .col-detalle-mob { width: 24%; }
-        .col-monto-mob { width: 34%; text-align: right; }
-
         .editable-input-fecha {
             background: rgba(5, 14, 11, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #fff;
-            padding: 4px;
+            padding: 6px;
             border-radius: 6px;
             width: 100%;
-            font-size: 10.5px;
+            font-size: 12px;
         }
 
         .dia-semana-resumen {
@@ -849,26 +839,28 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
                     </div>
                 </div>
                 <div class="week-accordion-content">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th class="col-fecha-mob">Fecha</th>
-                                <th class="col-dia-mob">Día</th>
-                                <th class="col-detalle-mob">Detalle</th>
-                                <th class="col-monto-mob text-right">Monto</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${semana.jornadas.map(j => `
+                    <div class="week-accordion-table-wrapper">
+                        <table>
+                            <thead>
                                 <tr>
-                                    <td class="col-fecha-mob"><input type="text" class="editable-input-fecha" value="${j.fechaCierre}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'fechaCierre', this.value)"></td>
-                                    <td class="col-dia-mob dia-semana-resumen">${j.diaCierre}</td>
-                                    <td class="col-detalle-mob"><input type="text" class="editable-input-fecha" value="${j.textoDetalle}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'textoDetalle', this.value)"></td>
-                                    <td class="col-monto-mob text-right" style="font-weight: bold; color: ${j.totalNeto >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${(j.totalNeto >= 0 ? '$' : '-$') + Math.abs(j.totalNeto).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                    <th style="width: 25%;">Fecha</th>
+                                    <th style="width: 22%;">Día</th>
+                                    <th style="width: 33%;">Detalle</th>
+                                    <th style="width: 20%;" class="text-right">Monto</th>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                ${semana.jornadas.map(j => `
+                                    <tr>
+                                        <td><input type="text" class="editable-input-fecha" value="${j.fechaCierre}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'fechaCierre', this.value)"></td>
+                                        <td class="dia-semana-resumen">${j.diaCierre}</td>
+                                        <td><input type="text" class="editable-input-fecha" value="${j.textoDetalle}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'textoDetalle', this.value)"></td>
+                                        <td class="text-right" style="font-weight: bold; color: ${j.totalNeto >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${(j.totalNeto >= 0 ? '$' : '-$') + Math.abs(j.totalNeto).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             `;
             contenedor.appendChild(divAcordeon);
