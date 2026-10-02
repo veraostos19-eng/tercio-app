@@ -22,8 +22,8 @@
            ========================================================== */
 
         :root {
-            --bg-dark-deep: #050e0b; /* Fondo aún más profundo tipo mesa de juego */
-            --bg-glass-card: rgba(10, 28, 21, 0.55); /* Cristal traslúcido aireado */
+            --bg-dark-deep: #050e0b;
+            --bg-glass-card: rgba(10, 28, 21, 0.55);
             --bg-glass-card-solid: rgba(10, 28, 21, 0.85); 
             --border-glass: rgba(255, 255, 255, 0.1); 
             --border-glass-glow: rgba(52, 211, 153, 0.35); 
@@ -60,7 +60,6 @@
         .col-main { min-width: 0; }
         .col-sidebar { position: sticky; top: 25px; }
 
-        /* Contenedores generales estilo Glass */
         .form-section, .table-responsive-wrapper, #cajaBalanceTotal, .sheet-container, .week-accordion, .block-header, .sheet-global-total {
             background: var(--bg-glass-card) !important;
             backdrop-filter: blur(24px);
@@ -82,7 +81,6 @@
             border-bottom: none !important;
         }
 
-        /* Estilo de Tablas convertido a "Pases VIP / Tickets de Apuesta" */
         table, .tabla-jornada, .history-table {
             width: 100%;
             min-width: 750px; 
@@ -109,7 +107,6 @@
             background: rgba(10, 28, 21, 0.25);
         }
 
-        /* Efecto de ticket individual al pasar el mouse por las filas */
         tr:hover td {
             background: rgba(52, 211, 153, 0.04) !important;
         }
@@ -117,7 +114,6 @@
         .monto-positivo { color: var(--accent-green) !important; }
         .monto-negativo { color: var(--accent-red) !important; }
 
-        /* Formulario flotante elegante */
         .form-section { padding: 24px; margin-bottom: 24px; }
         .row { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
         .col { flex: 1; min-width: 140px; }
@@ -171,7 +167,6 @@
             padding: 8px 10px !important;
             border-radius: 10px !important;
             font-family: inherit !important;
-            /* Ajuste 2: Montos dentro de cada jornada un pelo más grandes */
             font-size: 1.05rem !important;
             font-weight: 600 !important;
             transition: all 0.2s ease;
@@ -185,21 +180,43 @@
             box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.25);
         }
 
-        /* Ajuste 1: Nombres de los días en los resúmenes semanales en blanco puro */
+        /* Estilos móviles optimizados para acordeón semanal */
+        .week-accordion-content table {
+            width: 100%;
+            table-layout: fixed;
+        }
+        .week-accordion-content th, .week-accordion-content td {
+            padding: 8px 4px !important;
+            font-size: 11.5px !important;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .col-fecha-mob { width: 24%; }
+        .col-dia-mob { width: 22%; }
+        .col-detalle-mob { width: 24%; }
+        .col-monto-mob { width: 30%; text-align: right; }
+
+        .editable-input-fecha {
+            background: rgba(5, 14, 11, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 4px;
+            border-radius: 6px;
+            width: 100%;
+            font-size: 11px;
+        }
+
         .dia-semana-resumen {
             color: #ffffff !important;
             font-weight: 600 !important;
         }
 
-        /* Ajuste 3: Totales de la semana y balance total acumulado definitivamente más grandes y destacados */
         .total-semana-monto, .sheet-global-total span:last-child, #balanceTotal {
             font-size: 1.5rem !important;
             font-weight: 700 !important;
         }
 
-        /* ==========================================================
-           BURBUJA DE CHAT FLOTANTE ESTILO WHATSAPP (iOS Glassmorphism)
-           ========================================================== */
         .ticket-box {
             background: rgba(10, 28, 21, 0.75) !important;
             backdrop-filter: blur(25px);
@@ -242,7 +259,6 @@
             border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        /* Selectores de estatus tipo "Ficha de Casino" */
         .status-select {
             background: rgba(5, 14, 11, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.12);
@@ -377,15 +393,6 @@
             border: 1px solid rgba(52, 211, 153, 0.35);
             margin-top: 18px;
         }
-        .editable-input {
-            background: rgba(5, 14, 11, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            padding: 8px 10px;
-            border-radius: 10px;
-            width: 100%;
-            font-size: 13px;
-        }
 
         @media (max-width: 768px) {
             body { padding: 12px; }
@@ -403,9 +410,7 @@
         <span id="syncStatusBadge" style="font-size: 12px; color: var(--accent-cyan);">☁️ Conectado a la Nube</span>
     </div>
 
-    <!-- ESTRUCTURA DE DOS COLUMNAS (DASHBOARD GRID) -->
     <div class="dashboard-grid">
-        <!-- COLUMNA IZQUIERDA -->
         <div class="col-main">
             <div id="areaCapturaJornada">
                 <div class="block-header" style="margin-bottom: 12px;">
@@ -455,7 +460,6 @@
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA: Widgets Flotantes -->
         <div class="col-sidebar">
             <div class="form-section">
                 <div class="block-header" style="margin-bottom: 14px; font-size: 13px;">📝 Nueva Jugada</div>
@@ -483,7 +487,6 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
                 <button onclick="agregarJugada()">Procesar Jugada y Agregar</button>
             </div>
 
-            <!-- BURBUJA DE CHAT FLOTANTE ESTILO WHATSAPP (iOS Glassmorphism) -->
             <div id="contenedorTicket" class="ticket-box">
                 <div class="whatsapp-bubble-header">
                     <span>🟢</span> <span>Plano Acumulativo de WhatsApp</span>
@@ -843,14 +846,21 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
                 </div>
                 <div class="week-accordion-content">
                     <table>
-                        <thead><tr><th>Fecha</th><th>Día</th><th>Detalle</th><th class="text-right">Monto</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th class="col-fecha-mob">Fecha</th>
+                                <th class="col-dia-mob">Día</th>
+                                <th class="col-detalle-mob">Detalle</th>
+                                <th class="col-monto-mob text-right">Monto</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             ${semana.jornadas.map(j => `
                                 <tr>
-                                    <td><input type="text" class="editable-input" value="${j.fechaCierre}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'fechaCierre', this.value)"></td>
-                                    <td class="dia-semana-resumen">${j.diaCierre}</td>
-                                    <td><input type="text" class="editable-input" value="${j.textoDetalle}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'textoDetalle', this.value)"></td>
-                                    <td class="text-right" style="font-weight: bold; color: ${j.totalNeto >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${(j.totalNeto >= 0 ? '$' : '-$') + Math.abs(j.totalNeto).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                    <td class="col-fecha-mob"><input type="text" class="editable-input-fecha" value="${j.fechaCierre}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'fechaCierre', this.value)"></td>
+                                    <td class="col-dia-mob dia-semana-resumen">${j.diaCierre}</td>
+                                    <td class="col-detalle-mob"><input type="text" class="editable-input-fecha" value="${j.textoDetalle}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'textoDetalle', this.value)"></td>
+                                    <td class="col-monto-mob text-right" style="font-weight: bold; color: ${j.totalNeto >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${(j.totalNeto >= 0 ? '$' : '-$') + Math.abs(j.totalNeto).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
