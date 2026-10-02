@@ -18,7 +18,7 @@
     
     <style>
       /* ==========================================================
-           TERCIO SaaS - REDISEÑO GLASSMORPHISM & TICKET VIP V3
+           TERCIO SaaS - REDISEÑO GLASSMORPHISM & TICKET VIP V4
            ========================================================== */
 
         :root {
@@ -89,7 +89,7 @@
             background: transparent !important;
         }
 
-        /* Tabla del acordeón adaptada milimétricamente al ancho móvil sin scroll */
+        /* Tabla del acordeón adaptada milimétricamente */
         .week-accordion-content table {
             min-width: 100% !important;
             width: 100% !important;
@@ -187,27 +187,27 @@
             box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.25);
         }
 
-        /* Distribución exacta de columnas en móvil para que quepa el botón de restaurar */
+        /* Distribución de columnas optimizada con tamaños óptimos para escritorio y móvil */
         .week-accordion-content th, .week-accordion-content td {
-            padding: 8px 3px !important;
-            font-size: 10.5px !important;
+            padding: 12px 14px !important;
+            font-size: 13px !important;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        .col-dia-mob { width: 22%; }
-        .col-detalle-mob { width: 26%; }
-        .col-monto-mob { width: 34%; text-align: right; }
+        .col-dia-mob { width: 20%; }
+        .col-detalle-mob { width: 34%; }
+        .col-monto-mob { width: 28%; text-align: right; }
         .col-accion-mob { width: 18%; text-align: center; }
 
         .editable-input-fecha {
             background: rgba(5, 14, 11, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #fff;
-            padding: 4px;
-            border-radius: 6px;
+            padding: 8px 10px;
+            border-radius: 8px;
             width: 100%;
-            font-size: 10px;
+            font-size: 13px;
         }
 
         .dia-semana-resumen {
@@ -225,9 +225,9 @@
             background: linear-gradient(135deg, #fbbf24, #d97706) !important;
             color: #050e0b !important;
             border: none;
-            padding: 6px 8px !important;
+            padding: 8px 12px !important;
             border-radius: 8px;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
@@ -411,6 +411,16 @@
             .container { max-width: 100%; }
             .dashboard-grid { display: block; }
             .col-sidebar { position: static; }
+            
+            /* Ajustes específicos para que en móviles se vea impecable y compacto */
+            .week-accordion-content th, .week-accordion-content td {
+                padding: 8px 6px !important;
+                font-size: 11px !important;
+            }
+            .editable-input-fecha {
+                padding: 4px;
+                font-size: 11px;
+            }
         }
     </style>
 </head>
@@ -809,7 +819,7 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
             id: Date.now(),
             fechaCierre: registros[0].fecha,
             diaCierre: obtenerNombreDia(registros[0].fecha),
-            textoDetalle: `${registros.length} jugada(s)`,
+            textoDetalle: `${registros.length} jugada(s) registrada(s)`,
             totalNeto: parseFloat(totalNetoJornada.toFixed(2)),
             jugadasRespaldo: [...registros]
         });
@@ -828,9 +838,7 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
         }
 
         if (confirm(`¿Estás segura de restaurar la jornada del ${jornadaARestaurar.fechaCierre} a la tabla activa?`)) {
-            // Añadir las jugadas de la jornada al registro actual
             registros = registros.concat(jornadaARestaurar.jugadasRespaldo);
-            // Eliminarla del histórico semanal
             historicoSemanal.splice(originalIndex, 1);
 
             sincronizarDatos();
@@ -894,7 +902,7 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
                                     <td class="col-detalle-mob"><input type="text" class="editable-input-fecha" value="${j.textoDetalle}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'textoDetalle', this.value)"></td>
                                     <td class="col-monto-mob text-right" style="font-weight: bold; color: ${j.totalNeto >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${(j.totalNeto >= 0 ? '$' : '-$') + Math.abs(j.totalNeto).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                                     <td class="col-accion-mob text-center">
-                                        <button class="btn-restaurar-jornada" onclick="restaurarJornadaGuardada(${j.originalIndex})" title="Restaurar Jornada">🔄</button>
+                                        <button class="btn-restaurar-jornada" onclick="restaurarJornadaGuardada(${j.originalIndex})" title="Restaurar Jornada">🔄 Restaurar</button>
                                     </td>
                                 </tr>
                             `).join('')}
