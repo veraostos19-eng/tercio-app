@@ -89,15 +89,11 @@
             background: transparent !important;
         }
 
-        /* Contenedor con scroll interno para la tabla del acordeón, garantizando acceso a todas las funciones */
-        .week-accordion-table-wrapper {
-            overflow-x: auto;
-            width: 100%;
-        }
-
+        /* Tabla del acordeón adaptada milimétricamente al ancho móvil sin scroll */
         .week-accordion-content table {
-            min-width: 650px !important; /* Permite ver holgadamente todas las columnas y opciones */
+            min-width: 100% !important;
             width: 100% !important;
+            table-layout: fixed !important;
         }
 
         th, .tabla-jornada th {
@@ -191,14 +187,27 @@
             box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.25);
         }
 
+        /* Distribución exacta de columnas en móvil para que quepa el botón de restaurar */
+        .week-accordion-content th, .week-accordion-content td {
+            padding: 8px 3px !important;
+            font-size: 10.5px !important;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .col-dia-mob { width: 22%; }
+        .col-detalle-mob { width: 26%; }
+        .col-monto-mob { width: 34%; text-align: right; }
+        .col-accion-mob { width: 18%; text-align: center; }
+
         .editable-input-fecha {
             background: rgba(5, 14, 11, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #fff;
-            padding: 6px;
+            padding: 4px;
             border-radius: 6px;
             width: 100%;
-            font-size: 12px;
+            font-size: 10px;
         }
 
         .dia-semana-resumen {
@@ -209,6 +218,24 @@
         .total-semana-monto, .sheet-global-total span:last-child, #balanceTotal {
             font-size: 1.5rem !important;
             font-weight: 700 !important;
+        }
+
+        /* Botón de restaurar jornada estilo ficha dorada/amarilla */
+        .btn-restaurar-jornada {
+            background: linear-gradient(135deg, #fbbf24, #d97706) !important;
+            color: #050e0b !important;
+            border: none;
+            padding: 6px 8px !important;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+            width: auto !important;
+            margin: 0 !important;
+        }
+        .btn-restaurar-jornada:hover {
+            filter: brightness(1.15);
         }
 
         .ticket-box {
@@ -310,15 +337,6 @@
             background: linear-gradient(135deg, #25d366, #1ebe5d) !important; 
             margin-top: 0 !important; 
             box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3) !important;
-        }
-
-        .btn-delete-row {
-            background: var(--accent-red) !important;
-            padding: 8px 12px !important;
-            font-size: 11px !important;
-            width: auto !important;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(248, 113, 113, 0.3);
         }
 
         #cajaBalanceTotal, .summary-box {
@@ -802,6 +820,27 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
         actualizarTablaSemanalVisual();
     }
 
+    function restaurarJornadaGuardada(originalIndex) {
+        let jornadaA Restaurar = historicoSemanal[originalIndex];
+        if (!jornadaARestaurar || !jornadaARestaurar.jugadasRespaldo) {
+            alert("No hay jugadas de respaldo para esta jornada.");
+            return;
+        }
+
+        if (confirm(`¿Estás segura de restaurar la jornada del ${jornadaARestaurar.fechaCierre} a la tabla activa?`)) {
+            // Añadir las jugadas de la jornada al registro actual
+            registros = registros.concat(jornadaARestaurar.jugadasRespaldo);
+            // Eliminarla del histórico semanal
+            historicoSemanal.splice(originalIndex, 1);
+
+            sincronizarDatos();
+            actualizarTablaVisual();
+            actualizarPlanoAcumulativo();
+            actualizarTablaSemanalVisual();
+            alert("¡Jornada restaurada con éxito en el panel activo!");
+        }
+    }
+
     function actualizarTablaSemanalVisual() {
         const contenedor = document.getElementById('contenedorAcordeonesSemana');
         if (!contenedor) return;
@@ -839,28 +878,28 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
                     </div>
                 </div>
                 <div class="week-accordion-content">
-                    <div class="week-accordion-table-wrapper">
-                        <table>
-                            <thead>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="col-dia-mob">Día</th>
+                                <th class="col-detalle-mob">Detalle</th>
+                                <th class="col-monto-mob text-right">Monto</th>
+                                <th class="col-accion-mob text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${semana.jornadas.map(j => `
                                 <tr>
-                                    <th style="width: 25%;">Fecha</th>
-                                    <th style="width: 22%;">Día</th>
-                                    <th style="width: 33%;">Detalle</th>
-                                    <th style="width: 20%;" class="text-right">Monto</th>
+                                    <td class="col-dia-mob dia-semana-resumen">${j.diaCierre}</td>
+                                    <td class="col-detalle-mob"><input type="text" class="editable-input-fecha" value="${j.textoDetalle}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'textoDetalle', this.value)"></td>
+                                    <td class="col-monto-mob text-right" style="font-weight: bold; color: ${j.totalNeto >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${(j.totalNeto >= 0 ? '$' : '-$') + Math.abs(j.totalNeto).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                    <td class="col-accion-mob text-center">
+                                        <button class="btn-restaurar-jornada" onclick="restaurarJornadaGuardada(${j.originalIndex})" title="Restaurar Jornada">🔄</button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                ${semana.jornadas.map(j => `
-                                    <tr>
-                                        <td><input type="text" class="editable-input-fecha" value="${j.fechaCierre}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'fechaCierre', this.value)"></td>
-                                        <td class="dia-semana-resumen">${j.diaCierre}</td>
-                                        <td><input type="text" class="editable-input-fecha" value="${j.textoDetalle}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'textoDetalle', this.value)"></td>
-                                        <td class="text-right" style="font-weight: bold; color: ${j.totalNeto >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${(j.totalNeto >= 0 ? '$' : '-$') + Math.abs(j.totalNeto).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
             `;
             contenedor.appendChild(divAcordeon);
