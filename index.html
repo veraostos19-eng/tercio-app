@@ -89,7 +89,6 @@
             background: transparent !important;
         }
 
-        /* Tabla del acordeón adaptada milimétricamente */
         .week-accordion-content table {
             min-width: 100% !important;
             width: 100% !important;
@@ -187,7 +186,6 @@
             box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.25);
         }
 
-        /* Distribución de columnas optimizada con tamaños óptimos para escritorio y móvil */
         .week-accordion-content th, .week-accordion-content td {
             padding: 12px 14px !important;
             font-size: 13px !important;
@@ -220,7 +218,6 @@
             font-weight: 700 !important;
         }
 
-        /* Botón de restaurar jornada estilo ficha dorada/amarilla */
         .btn-restaurar-jornada {
             background: linear-gradient(135deg, #fbbf24, #d97706) !important;
             color: #050e0b !important;
@@ -412,7 +409,6 @@
             .dashboard-grid { display: block; }
             .col-sidebar { position: static; }
             
-            /* Ajustes específicos para que en móviles se vea impecable y compacto */
             .week-accordion-content th, .week-accordion-content td {
                 padding: 8px 6px !important;
                 font-size: 11px !important;
@@ -440,7 +436,7 @@
                 </div>
                 
                 <div class="table-responsive-wrapper" id="wrapperCaptura">
-                    <table>
+                    <table id="tablaCapturaPrincipal">
                         <thead>
                             <tr>
                                 <th style="width: 14%;">Fecha / Día</th>
@@ -789,24 +785,48 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
         }
     }
 
+    /* FUNCIÓN DE CAPTURA CORREGIDA Y OPTIMIZADA PARA RENDERIZAR COMPLETO */
     function generarCapturaJornadaActual() {
         const area = document.getElementById('areaCapturaJornada');
         const wrapper = document.getElementById('wrapperCaptura');
-        const originalOverflow = wrapper.style.overflowX;
-        const originalWidth = wrapper.style.width;
-        wrapper.style.overflowX = 'visible';
-        wrapper.style.width = '750px';
+        const tabla = document.getElementById('tablaCapturaPrincipal');
 
-        html2canvas(area, { scale: 2, backgroundColor: '#050e0b', useCORS: true, windowWidth: 900 }).then(canvas => {
-            wrapper.style.overflowX = originalOverflow;
-            wrapper.style.width = originalWidth;
+        // Guardamos los estilos originales para restaurarlos al terminar
+        const originalWrapperOverflow = wrapper.style.overflowX;
+        const originalWrapperWidth = wrapper.style.width;
+        const originalTableMinWidth = tabla.style.minWidth;
+
+        // Forzamos temporalmente el ancho completo de la tabla para que no se corte por el scroll lateral
+        wrapper.style.overflowX = 'visible';
+        wrapper.style.width = '100%';
+        tabla.style.minWidth = '100%';
+
+        // Calculamos las dimensiones exactas y reales del bloque completo (encabezado, tabla y balance neto)
+        const anchoReal = area.scrollWidth || area.offsetWidth;
+        const altoReal = area.scrollHeight || area.offsetHeight;
+
+        html2canvas(area, { 
+            scale: 2, 
+            backgroundColor: '#050e0b', 
+            useCORS: true, 
+            width: anchoReal,
+            height: altoReal,
+            windowWidth: anchoReal + 50
+        }).then(canvas => {
+            // Restauramos los valores originales en pantalla
+            wrapper.style.overflowX = originalWrapperOverflow;
+            wrapper.style.width = originalWrapperWidth;
+            tabla.style.minWidth = originalTableMinWidth;
+
             const enlace = document.createElement('a');
             enlace.download = `control_jornada_${new Date().toISOString().slice(0,10)}.png`;
             enlace.href = canvas.toDataURL('image/png');
             enlace.click();
-        }).catch(() => {
-            wrapper.style.overflowX = originalOverflow;
-            wrapper.style.width = originalWidth;
+        }).catch((err) => {
+            console.error("Error al generar la captura:", err);
+            wrapper.style.overflowX = originalWrapperOverflow;
+            wrapper.style.width = originalWrapperWidth;
+            tabla.style.minWidth = originalTableMinWidth;
         });
     }
 
