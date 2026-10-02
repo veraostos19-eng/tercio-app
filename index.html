@@ -430,6 +430,7 @@
 
     <div class="dashboard-grid">
         <div class="col-main">
+            <!-- BLOQUE AISLADO Y COMPLETO UNICAMENTE DE LA JORNADA ACTUAL -->
             <div id="areaCapturaJornada">
                 <div class="block-header" style="margin-bottom: 12px;">
                     Historial y Control de la Jornada Actual
@@ -785,48 +786,52 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
         }
     }
 
-    /* FUNCIÓN DE CAPTURA CORREGIDA Y OPTIMIZADA PARA RENDERIZAR COMPLETO */
+    /* CAPTURA GARANTIZADA DE LA JORNADA ACTUAL COMPLETA EN CUALQUIER DISPOSITIVO */
     function generarCapturaJornadaActual() {
         const area = document.getElementById('areaCapturaJornada');
         const wrapper = document.getElementById('wrapperCaptura');
         const tabla = document.getElementById('tablaCapturaPrincipal');
 
-        // Guardamos los estilos originales para restaurarlos al terminar
-        const originalWrapperOverflow = wrapper.style.overflowX;
-        const originalWrapperWidth = wrapper.style.width;
-        const originalTableMinWidth = tabla.style.minWidth;
+        // Guardamos los estados de diseño originales
+        const prevWrapperOverflow = wrapper.style.overflowX;
+        const prevWrapperWidth = wrapper.style.width;
+        const prevTableWidth = tabla.style.width;
+        const prevTableMinWidth = tabla.style.minWidth;
 
-        // Forzamos temporalmente el ancho completo de la tabla para que no se corte por el scroll lateral
+        // Desactivamos el scroll temporalmente y expandimos la tabla al 100% real para que html2canvas no recorte nada
         wrapper.style.overflowX = 'visible';
         wrapper.style.width = '100%';
-        tabla.style.minWidth = '100%';
+        tabla.style.width = '100%';
+        tabla.style.minWidth = '100px';
 
-        // Calculamos las dimensiones exactas y reales del bloque completo (encabezado, tabla y balance neto)
-        const anchoReal = area.scrollWidth || area.offsetWidth;
-        const altoReal = area.scrollHeight || area.offsetHeight;
+        // Calculamos el ancho exacto del bloque de la jornada actual
+        const anchoReal = Math.max(area.scrollWidth, area.offsetWidth, 900);
+        const altoReal = area.scrollHeight;
 
         html2canvas(area, { 
             scale: 2, 
             backgroundColor: '#050e0b', 
-            useCORS: true, 
+            useCORS: true,
             width: anchoReal,
             height: altoReal,
-            windowWidth: anchoReal + 50
+            windowWidth: anchoReal + 100
         }).then(canvas => {
-            // Restauramos los valores originales en pantalla
-            wrapper.style.overflowX = originalWrapperOverflow;
-            wrapper.style.width = originalWrapperWidth;
-            tabla.style.minWidth = originalTableMinWidth;
+            // Restauramos los estilos originales inmediatamente después de tomar la foto
+            wrapper.style.overflowX = prevWrapperOverflow;
+            wrapper.style.width = prevWrapperWidth;
+            tabla.style.width = prevTableWidth;
+            tabla.style.minWidth = prevTableMinWidth;
 
             const enlace = document.createElement('a');
             enlace.download = `control_jornada_${new Date().toISOString().slice(0,10)}.png`;
             enlace.href = canvas.toDataURL('image/png');
             enlace.click();
-        }).catch((err) => {
+        }).catch(err => {
             console.error("Error al generar la captura:", err);
-            wrapper.style.overflowX = originalWrapperOverflow;
-            wrapper.style.width = originalWrapperWidth;
-            tabla.style.minWidth = originalTableMinWidth;
+            wrapper.style.overflowX = prevWrapperOverflow;
+            wrapper.style.width = prevWrapperWidth;
+            tabla.style.width = prevTableWidth;
+            tabla.style.minWidth = prevTableMinWidth;
         });
     }
 
