@@ -542,7 +542,16 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
         console.error("Error al inicializar Firebase:", error);
     }
 
-    function sincronizarDatos() {
+   function sincronizarDatos() {
+        // Creamos un respaldo inmediato en el navegador (localStorage)
+        const respaldoLocal = {
+            registros: registros,
+            historicoSemanal: historicoSemanal,
+            actualizado: new Date().toISOString()
+        };
+        localStorage.setItem('tercio_respaldo_seguro', JSON.stringify(respaldoLocal));
+
+        // Sincronizamos con Firebase en la nube
         if (db) {
             db.collection('jornada_activa_app').doc('estado_actual').set({
                 registros: registros,
@@ -553,17 +562,43 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
     }
 
     function sincronizarDesdeNube() {
-        if (!db) return;
+        if (!db) {
+            cargarDesdeRespaldoLocal();
+            return;
+        }
         db.collection('jornada_activa_app').doc('estado_actual').get().then(doc => {
             if (doc.exists) {
                 const data = doc.data();
-                if (data.registros) registros = data.registros;
-                if (data.historicoSemanal) historicoSemanal = data.historicoSemanal;
+                if (data.registros || data.historicoSemanal) {
+                    if (data.registros) registros = data.registros;
+                    if (data.historicoSemanal) historicoSemanal = data.historicoSemanal;
+                    sincronizarDatos(); // Actualiza el respaldo local con lo de la nube
+                } else {
+                    cargarDesdeRespaldoLocal();
+                }
                 actualizarTablaVisual();
                 actualizarPlanoAcumulativo();
                 actualizarTablaSemanalVisual();
+            } else {
+                cargarDesdeRespaldoLocal();
             }
-        }).catch(err => console.error("Error al leer desde Firestore:", err));
+        }).catch(err => {
+            console.warn("Fallo de red o Firebase, cargando respaldo local...");
+            cargarDesdeRespaldoLocal();
+        });
+    }
+
+    function cargarDesdeRespaldoLocal() {
+        const localData = localStorage.getItem('tercio_respaldo_seguro');
+        if (localData) {
+            const parsed = JSON.parse(localData);
+            registros = parsed.registros || [];
+            historicoSemanal = parsed.historicoSemanal || [];
+            actualizarTablaVisual();
+            actualizarPlanoAcumulativo();
+            actualizarTablaSemanalVisual();
+            console.log("¡Datos recuperados con éxito desde el respaldo local!");
+        }
     }
 
     function convertirAmericanoADecimal(cuota) {
