@@ -658,6 +658,36 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
         }
         return 0;
     }
+    function recalcalcularGananciaEmpate(reg) {
+    const monto = parseFloat(reg.monto || reg.montoApostado) || 0;
+    let lineas = reg.descripcion.split('\n').filter(l => l.trim() !== '');
+    if (lineas.length <= 1) return reg.gananciaPotencial;
+
+    let decimalTotal = 1;
+    let estadosLineas = reg.lineasEstatus || {};
+
+    lineas.forEach((l, idx) => {
+        let estadoLinea = estadosLineas[idx] || 'GANADA';
+        if (estadoLinea === 'PUSH' || estadoLinea === 'EMPATE') {
+            return; 
+        }
+
+        const match = l.match(/([+-]?\d+)\s*$/);
+        if (match) {
+            let cuotaNum = parseInt(match[1]);
+            decimalTotal *= convertirAmericanoADecimal(cuotaNum);
+        }
+    });
+
+    return parseFloat((monto * (decimalTotal - 1)).toFixed(2));
+}
+
+function calcularGananciaEfectiva(reg) {
+    if (reg.estatus === 'MOROCHA' || reg.estatus === 'DERECHA') {
+        return recalcalcularGananciaEmpate(reg);
+    }
+    return parseFloat(reg.gananciaPotencial) || 0;
+}
 
     function agregarJugada() {
         const fechaVal = document.getElementById('fechaJugada').value;
