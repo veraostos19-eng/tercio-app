@@ -409,36 +409,59 @@
             margin-top: 18px;
         }
 
+       /* ==========================================================
+           AJUSTES EXCLUSIVOS PARA VERSIÓN MÓVIL
+           ========================================================== */
         @media (max-width: 768px) {
-    .week-accordion-content {
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch;
-    }
-    .week-accordion-content table {
-        min-width: 420px !important;
-        width: 100% !important;
-        table-layout: auto !important;
-    }
-    .week-accordion-content th.col-dia-mob, 
-    .week-accordion-content td.col-dia-mob {
-        width: 18% !important;
-        min-width: 65px !important;
-    }
-    .week-accordion-content th.col-detalle-mob, 
-    .week-accordion-content td.col-detalle-mob {
-        width: 45% !important;
-        min-width: 140px !important;
-    }
-    .week-accordion-content th.col-monto-mob, 
-    .week-accordion-content td.col-monto-mob {
-        width: 37% !important;
-        min-width: 95px !important;
-    }
-    .week-accordion-content th.col-accion-mob, 
-    .week-accordion-content td.col-accion-mob {
-        min-width: 110px !important;
-    }
-}
+            body {
+                padding: 12px !important;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr !important; /* Pasa a 1 columna para que nada se aplaste */
+                gap: 16px !important;
+            }
+
+            .col-sidebar {
+                position: static !important;
+            }
+
+            /* Configuración precisa de la tabla semanal para scroll perfecto */
+            .week-accordion-content {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .week-accordion-content table {
+                min-width: 420px !important;
+                width: 100% !important;
+                table-layout: auto !important;
+            }
+
+            .week-accordion-content th.col-dia-mob, 
+            .week-accordion-content td.col-dia-mob {
+                width: 18% !important;
+                min-width: 65px !important;
+            }
+
+            .week-accordion-content th.col-detalle-mob, 
+            .week-accordion-content td.col-detalle-mob {
+                width: 45% !important;
+                min-width: 140px !important;
+            }
+
+            .week-accordion-content th.col-monto-mob, 
+            .week-accordion-content td.col-monto-mob {
+                width: 37% !important;
+                min-width: 95px !important;
+            }
+
+            .week-accordion-content th.col-accion-mob, 
+            .week-accordion-content td.col-accion-mob {
+                min-width: 110px !important;
+            }
+        }
+    </style>
         
     </style>
 </head>
