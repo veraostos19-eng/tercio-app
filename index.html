@@ -89,11 +89,17 @@
             background: transparent !important;
         }
 
-        .week-accordion-content table {
-            min-width: 100% !important;
-            width: 100% !important;
-            table-layout: fixed !important;
+        .week-accordion-content {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
         }
+
+        .week-accordion-content table {
+            min-width: 550px !important;
+            width: 100% !important;
+            table-layout: auto !important;
+        }
+        
 
         th, .tabla-jornada th {
             background: rgba(5, 14, 11, 0.85) !important;
