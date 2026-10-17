@@ -95,7 +95,7 @@
         }
 
         .week-accordion-content table {
-            min-width: 550px !important;
+            min-width: 430px !important;
             width: 100% !important;
             table-layout: auto !important;
         }
@@ -410,23 +410,36 @@
         }
 
         @media (max-width: 768px) {
-            body { padding: 12px; }
-            .container { max-width: 100%; }
-            .dashboard-grid { display: block; }
-            .col-sidebar { position: static; }
-
-            .week-accordion-content { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-            .week-accordion-content table { min-width: 480px; }
-            
-            .week-accordion-content th, .week-accordion-content td {
-                padding: 8px 6px !important;
-                font-size: 11px !important;
-            }
-            .editable-input-fecha {
-                padding: 4px;
-                font-size: 11px;
-            }
-        }
+    .week-accordion-content {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    .week-accordion-content table {
+        min-width: 420px !important;
+        width: 100% !important;
+        table-layout: auto !important;
+    }
+    .week-accordion-content th.col-dia-mob, 
+    .week-accordion-content td.col-dia-mob {
+        width: 18% !important;
+        min-width: 65px !important;
+    }
+    .week-accordion-content th.col-detalle-mob, 
+    .week-accordion-content td.col-detalle-mob {
+        width: 45% !important;
+        min-width: 140px !important;
+    }
+    .week-accordion-content th.col-monto-mob, 
+    .week-accordion-content td.col-monto-mob {
+        width: 37% !important;
+        min-width: 95px !important;
+    }
+    .week-accordion-content th.col-accion-mob, 
+    .week-accordion-content td.col-accion-mob {
+        min-width: 110px !important;
+    }
+}
+        
     </style>
 </head>
 <body>
