@@ -542,8 +542,7 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
         console.error("Error al inicializar Firebase:", error);
     }
 
-   function sincronizarDatos() {
-        // Creamos un respaldo inmediato en el navegador (localStorage)
+    function sincronizarDatos() {
         const respaldoLocal = {
             registros: registros,
             historicoSemanal: historicoSemanal,
@@ -551,7 +550,6 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
         };
         localStorage.setItem('tercio_respaldo_seguro', JSON.stringify(respaldoLocal));
 
-        // Sincronizamos con Firebase en la nube
         if (db) {
             db.collection('jornada_activa_app').doc('estado_actual').set({
                 registros: registros,
@@ -572,7 +570,7 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
                 if (data.registros || data.historicoSemanal) {
                     if (data.registros) registros = data.registros;
                     if (data.historicoSemanal) historicoSemanal = data.historicoSemanal;
-                    sincronizarDatos(); // Actualiza el respaldo local con lo de la nube
+                    sincronizarDatos();
                 } else {
                     cargarDesdeRespaldoLocal();
                 }
@@ -602,8 +600,10 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
     }
 
     function convertirAmericanoADecimal(cuota) {
-        if (cuota > 0) return (cuota / 100) + 1;
-        return (100 / Math.abs(cuota)) + 1;
+        let num = parseFloat(cuota);
+        if (isNaN(num)) return 1.0;
+        if (num > 0) return (num / 100) + 1;
+        return (100 / Math.abs(num)) + 1;
     }
 
     function obtenerNombreDia(fechaStr) {
@@ -658,36 +658,67 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
         }
         return 0;
     }
-    function recalcalcularGananciaEmpate(reg) {
-    const monto = parseFloat(reg.monto || reg.montoApostado) || 0;
-    let lineas = reg.descripcion.split('\n').filter(l => l.trim() !== '');
-    if (lineas.length <= 1) return reg.gananciaPotencial;
 
-    let decimalTotal = 1;
-    let estadosLineas = reg.lineasEstatus || {};
+    // --- CÁLCULO DE MOROCHA / DERECHA ---
+    function recalcularGananciaEmpateDesglosado(reg) {
+        const monto = parseFloat(reg.monto || reg.montoApostado) || 0;
+        let lineas = (reg.descripcion || '').split('\n').filter(l => l.trim() !== '');
+        if (lineas.length <= 1) return parseFloat(reg.gananciaPotencial) || 0;
 
-    lineas.forEach((l, idx) => {
-        let estadoLinea = estadosLineas[idx] || 'GANADA';
-        if (estadoLinea === 'PUSH' || estadoLinea === 'EMPATE') {
-            return; 
-        }
+        let decimalTotal = 1;
+        let estadosLineas = reg.lineasEstatus || {};
 
-        const match = l.match(/([+-]?\d+)\s*$/);
-        if (match) {
-            let cuotaNum = parseInt(match[1]);
-            decimalTotal *= convertirAmericanoADecimal(cuotaNum);
-        }
-    });
+        lineas.forEach((l, idx) => {
+            let estadoLinea = estadosLineas[idx] || 'GANADA';
+            if (estadoLinea === 'PERDIDA') {
+                decimalTotal = 0;
+                return;
+            }
+            if (estadoLinea === 'PUSH' || estadoLinea === 'EMPATE') {
+                return; 
+            }
 
-    return parseFloat((monto * (decimalTotal - 1)).toFixed(2));
-}
+            const match = l.match(/([+-]?\d+)\s*$/);
+            if (match) {
+                let cuotaNum = parseInt(match[1]);
+                decimalTotal *= convertirAmericanoADecimal(cuotaNum);
+            }
+        });
 
-function calcularGananciaEfectiva(reg) {
-    if (reg.estatus === 'MOROCHA' || reg.estatus === 'DERECHA') {
-        return recalcalcularGananciaEmpate(reg);
+        if (decimalTotal <= 0) return 0;
+        return parseFloat((monto * (decimalTotal - 1)).toFixed(2));
     }
-    return parseFloat(reg.gananciaPotencial) || 0;
-}
+
+    function calcularGananciaEfectiva(reg) {
+        if (reg.estatus === 'MOROCHA' || reg.estatus === 'DERECHA') {
+            return recalcularGananciaEmpateDesglosado(reg);
+        }
+        return parseFloat(reg.gananciaPotencial) || 0;
+    }
+
+    function calcularNetoJugada(reg) {
+        const montoVal = parseFloat(reg.monto || reg.montoApostado) || 0;
+        if (reg.estatus === 'GANADA') return parseFloat(reg.gananciaPotencial) || 0;
+        if (reg.estatus === 'PERDIDA') return -montoVal;
+        if (reg.estatus === 'MOROCHA' || reg.estatus === 'DERECHA') {
+            const gananciaEfectiva = recalcularGananciaEmpateDesglosado(reg);
+            if (gananciaEfectiva === 0 && Object.values(reg.lineasEstatus || {}).includes('PERDIDA')) {
+                return -montoVal;
+            }
+            return gananciaEfectiva;
+        }
+        return 0; // PENDIENTE o PUSH
+    }
+
+    function actualizarEstatusLinea(indexJugada, indexLinea, nuevoEstatus) {
+        if (!registros[indexJugada].lineasEstatus) {
+            registros[indexJugada].lineasEstatus = {};
+        }
+        registros[indexJugada].lineasEstatus[indexLinea] = nuevoEstatus;
+        sincronizarDatos();
+        actualizarTablaVisual();
+        actualizarPlanoAcumulativo();
+    }
 
     function agregarJugada() {
         const fechaVal = document.getElementById('fechaJugada').value;
@@ -711,7 +742,7 @@ function calcularGananciaEfectiva(reg) {
             monto: monto,
             gananciaPotencial: gananciaFinal,
             estatus: 'PENDIENTE',
-            desgloseLineas: null
+            lineasEstatus: {}
         });
 
         sincronizarDatos();
@@ -743,24 +774,17 @@ function calcularGananciaEfectiva(reg) {
     }
 
     function cambiarEstatus(index, nuevoEstatus) {
-        let reg = registros[index];
-        reg.estatus = nuevoEstatus;
+        registros[index].estatus = nuevoEstatus;
         sincronizarDatos();
         actualizarTablaVisual();
         actualizarPlanoAcumulativo();
     }
 
-    function calcularNetoJugada(reg) {
-        const montoVal = parseFloat(reg.monto || reg.montoApostado) || 0;
-        const gananciaVal = parseFloat(reg.gananciaPotencial) || 0;
-        if (reg.estatus === 'GANADA') return gananciaVal;
-        if (reg.estatus === 'PERDIDA') return -montoVal;
-        return 0;
-    }
-
     function actualizarPlanoAcumulativo() {
         const contenedor = document.getElementById('contenedorTicket');
         const textoDiv = document.getElementById('textoTicketGenerado');
+        if (!contenedor || !textoDiv) return;
+
         if (registros.length === 0) {
             contenedor.style.display = 'none';
             textoDiv.textContent = '';
@@ -773,14 +797,24 @@ function calcularGananciaEfectiva(reg) {
             if (reg.estatus === 'GANADA') textoEstatus = "✅ GANADA";
             else if (reg.estatus === 'PERDIDA') textoEstatus = "❌ PERDIDA";
             else if (reg.estatus === 'PUSH') textoEstatus = "🔄 PUSH";
+            else if (reg.estatus === 'MOROCHA') textoEstatus = "🔄 PASÓ A MOROCHA";
+            else if (reg.estatus === 'DERECHA') textoEstatus = "🔄 PASÓ A DERECHA";
 
             let montoVal = parseFloat(reg.monto || reg.montoApostado) || 0;
+            let gananciaOrig = parseFloat(reg.gananciaPotencial) || 0;
+            let gananciaReal = calcularGananciaEfectiva(reg);
+
             planoTexto += `\n-----------------------------------\n`;
-            planoTexto += `*Jugada #${i + 1}* (${reg.fecha} - ${reg.dia})\n\n`;
+            planoTexto += `*Jugada #${i + 1} (${reg.fecha} ${reg.dia})*\n\n`;
             planoTexto += `${reg.descripcion}\n\n`;
             planoTexto += `🔹 *Arriesga:* $${montoVal.toLocaleString('en-US', {minimumFractionDigits: 2})}\n`;
-            planoTexto += `🔹 *Ganancia:* $${parseFloat(reg.gananciaPotencial).toLocaleString('en-US', {minimumFractionDigits: 2})}\n`;
-            planoTexto += `📌 *Estatus:* ${textoEstatus}`;
+            planoTexto += `🔹 *Ganancia Potencial:* $${gananciaOrig.toLocaleString('en-US', {minimumFractionDigits: 2})}\n`;
+            
+            if (reg.estatus === 'MOROCHA' || reg.estatus === 'DERECHA') {
+                planoTexto += `🔹 *Ganancia Real:* $${gananciaReal.toLocaleString('en-US', {minimumFractionDigits: 2})}\n`;
+            }
+
+            planoTexto += `📌 *Estatus:* ${textoEstatus}\n`;
         });
 
         textoDiv.textContent = planoTexto;
@@ -789,7 +823,7 @@ function calcularGananciaEfectiva(reg) {
 
     function copiarTicketActual() {
         const textoDiv = document.getElementById('textoTicketGenerado');
-        if (!textoDiv.textContent) return;
+        if (!textoDiv || !textoDiv.textContent) return;
         navigator.clipboard.writeText(textoDiv.textContent).then(() => {
             alert("¡Plano acumulativo copiado al portapapeles!");
         });
@@ -814,12 +848,38 @@ function calcularGananciaEfectiva(reg) {
             balanceGeneral += resultadoNeto;
             const montoVal = parseFloat(reg.monto || reg.montoApostado) || 0;
             const gananciaVal = parseFloat(reg.gananciaPotencial) || 0;
+            const muestraDesglose = (reg.estatus === 'MOROCHA' || reg.estatus === 'DERECHA');
+
+            let desgloseHtml = '';
+            if (muestraDesglose) {
+                let lineas = (reg.descripcion || '').split('\n').filter(l => l.trim() !== '');
+                if (!reg.lineasEstatus) reg.lineasEstatus = {};
+
+                desgloseHtml += `<div style="margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.15); border-radius: 6px; font-size: 11px;">`;
+                desgloseHtml += `<div style="font-weight: bold; margin-bottom: 4px; color: var(--text-muted);">Desglose de líneas:</div>`;
+                
+                lineas.forEach((lineaTexto, lIdx) => {
+                    let estActual = reg.lineasEstatus[lIdx] || 'GANADA';
+                    desgloseHtml += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 5px;">
+                            <span style="flex: 1; word-break: break-all;">${lineaTexto}</span>
+                            <select style="font-size: 10px; padding: 2px;" onchange="actualizarEstatusLinea(${index}, ${lIdx}, this.value)">
+                                <option value="GANADA" ${estActual === 'GANADA' ? 'selected' : ''}>✅ Ganada</option>
+                                <option value="PUSH" ${estActual === 'PUSH' ? 'selected' : ''}>🔄 Push (Empate)</option>
+                                <option value="PERDIDA" ${estActual === 'PERDIDA' ? 'selected' : ''}>❌ Perdida</option>
+                            </select>
+                        </div>
+                    `;
+                });
+                desgloseHtml += `</div>`;
+            }
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${reg.fecha || ''}</td>
                 <td>
                     <textarea class="tabla-input-inline" style="width: 100%; min-height: 55px; resize: vertical;" oninput="actualizarCampoJugada(${index}, 'descripcion', this.value)">${reg.descripcion || ''}</textarea>
+                    ${desgloseHtml}
                 </td>
                 <td class="text-right">
                     <input type="number" class="tabla-input-inline text-right" style="width: 100px;" value="${montoVal}" oninput="actualizarCampoJugada(${index}, 'monto', this.value)">
@@ -832,7 +892,9 @@ function calcularGananciaEfectiva(reg) {
                         <option value="PENDIENTE" ${reg.estatus === 'PENDIENTE' ? 'selected' : ''}>⏳ PENDIENTE</option>
                         <option value="GANADA" ${reg.estatus === 'GANADA' ? 'selected' : ''}>✅ GANADA</option>
                         <option value="PERDIDA" ${reg.estatus === 'PERDIDA' ? 'selected' : ''}>❌ PERDIDA</option>
-                        <option value="PUSH" ${reg.estatus === 'PUSH' ? 'selected' : ''}>🔄 PUSH</option>
+                        <option value="PUSH" ${reg.estatus === 'PUSH' ? 'selected' : ''}>🤝🏻 PUSH</option>
+                        <option value="MOROCHA" ${reg.estatus === 'MOROCHA' ? 'selected' : ''}>🔄 Pasó a Morocha</option>
+                        <option value="DERECHA" ${reg.estatus === 'DERECHA' ? 'selected' : ''}>🔄 Pasó a Derecha</option>
                     </select>
                 </td>
                 <td class="text-right ${resultadoNeto > 0 ? 'monto-positivo' : (resultadoNeto < 0 ? 'monto-negativo' : '')}" style="font-weight: bold;">
@@ -851,68 +913,58 @@ function calcularGananciaEfectiva(reg) {
         }
     }
 
-    /* CAPTURA AISLADA Y CLONADA PARA ELIMINAR CUALQUIER SOMBRA O CORTE */
-function generarCapturaJornadaActual() {
-    const areaOriginal = document.getElementById('areaCapturaJornada');
-    if (!areaOriginal || registros.length === 0) {
-        alert("No hay datos suficientes para generar la captura.");
-        return;
-    }
-
-    // Creamos un contenedor temporal completamente aislado fuera de la vista
-    const contenedorTemporal = document.createElement('div');
-    contenedorTemporal.style.position = 'absolute';
-    contenedorTemporal.style.left = '-9999px';
-    contenedorTemporal.style.top = '0';
-    contenedorTemporal.style.width = '950px'; // Ancho fijo perfecto para la captura
-    contenedorTemporal.style.backgroundColor = '#050e0b';
-    contenedorTemporal.style.padding = '20px';
-    contenedorTemporal.style.borderRadius = '0px';
-
-    // Clonamos exactamente el contenido de la jornada actual
-    const clon = areaOriginal.cloneNode(true);
-    
-    // Removemos o estilizamos los elementos interactivos dentro del clon para que salgan como texto limpio
-    clon.style.boxShadow = 'none';
-    clon.style.border = 'none';
-    clon.style.background = '#050e0b';
-
-    // Aseguramos que los inputs y textareas dentro del clon se vean estáticos y limpios en la foto
-    const inputsClon = clon.querySelectorAll('input, select, textarea');
-    inputsClon.forEach(el => {
-        el.style.border = 'none';
-        el.style.background = 'transparent';
-        el.style.boxShadow = 'none';
-        el.style.color = '#e2f0ea';
-        if(el.tagName === 'SELECT') {
-            // Reemplazar select por texto plano de su valor seleccionado si se desea, o dejarlo sin bordes
-            el.style.appearance = 'none';
+    function generarCapturaJornadaActual() {
+        const areaOriginal = document.getElementById('areaCapturaJornada');
+        if (!areaOriginal || registros.length === 0) {
+            alert("No hay datos suficientes para generar la captura.");
+            return;
         }
-    });
 
-    contenedorTemporal.appendChild(clon);
-    document.body.appendChild(contenedorTemporal);
+        const contenedorTemporal = document.createElement('div');
+        contenedorTemporal.style.position = 'absolute';
+        contenedorTemporal.style.left = '-9999px';
+        contenedorTemporal.style.top = '0';
+        contenedorTemporal.style.width = '950px';
+        contenedorTemporal.style.backgroundColor = '#050e0b';
+        contenedorTemporal.style.padding = '20px';
 
-    html2canvas(clon, { 
-        scale: 2, 
-        backgroundColor: '#050e0b', 
-        useCORS: true,
-        logging: false
-    }).then(canvas => {
-        // Removemos el contenedor temporal
-        document.body.removeChild(contenedorTemporal);
+        const clon = areaOriginal.cloneNode(true);
+        clon.style.boxShadow = 'none';
+        clon.style.border = 'none';
+        clon.style.background = '#050e0b';
 
-        const enlace = document.createElement('a');
-        enlace.download = `control_jornada_${new Date().toISOString().slice(0,10)}.png`;
-        enlace.href = canvas.toDataURL('image/png');
-        enlace.click();
-    }).catch(err => {
-        console.error("Error al generar la captura:", err);
-        if (document.body.contains(contenedorTemporal)) {
+        const inputsClon = clon.querySelectorAll('input, select, textarea');
+        inputsClon.forEach(el => {
+            el.style.border = 'none';
+            el.style.background = 'transparent';
+            el.style.boxShadow = 'none';
+            el.style.color = '#e2f0ea';
+            if(el.tagName === 'SELECT') {
+                el.style.appearance = 'none';
+            }
+        });
+
+        contenedorTemporal.appendChild(clon);
+        document.body.appendChild(contenedorTemporal);
+
+        html2canvas(clon, { 
+            scale: 2, 
+            backgroundColor: '#050e0b', 
+            useCORS: true,
+            logging: false
+        }).then(canvas => {
             document.body.removeChild(contenedorTemporal);
-        }
-    });
-}
+            const enlace = document.createElement('a');
+            enlace.download = `control_jornada_${new Date().toISOString().slice(0,10)}.png`;
+            enlace.href = canvas.toDataURL('image/png');
+            enlace.click();
+        }).catch(err => {
+            console.error("Error al generar la captura:", err);
+            if (document.body.contains(contenedorTemporal)) {
+                document.body.removeChild(contenedorTemporal);
+            }
+        });
+    }
 
     function guardarJornadaCierre() {
         if (registros.length === 0) { alert("No hay jugadas para guardar."); return; }
@@ -1045,6 +1097,3 @@ function generarCapturaJornadaActual() {
         }
     }
 </script>
-
-</body>
-</html>
