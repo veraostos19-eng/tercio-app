@@ -1044,31 +1044,29 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
                         <span>▼</span>
                     </div>
                 </div>
-                <div class="week-accordion-content">
-                    <div style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch;">
-                        <table style="min-width: 480px; width: 100%;">
-                            <thead>
+                <div class="week-accordion-content" style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
+                    <table style="min-width: 500px; width: 100%; table-layout: auto;">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 80px;" class="col-dia-mob">Día</th>
+                                <th style="min-width: 180px;" class="col-detalle-mob">Detalle</th>
+                                <th style="min-width: 110px;" class="col-monto-mob text-right">Monto</th>
+                                <th style="min-width: 110px;" class="col-accion-mob text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${semana.jornadas.map(j => `
                                 <tr>
-                                    <th class="col-dia-mob">Día</th>
-                                    <th class="col-detalle-mob">Detalle</th>
-                                    <th class="col-monto-mob text-right">Monto</th>
-                                    <th class="col-accion-mob text-center">Acción</th>
+                                    <td class="col-dia-mob dia-semana-resumen">${j.diaCierre}</td>
+                                    <td class="col-detalle-mob"><input type="text" class="editable-input-fecha" value="${j.textoDetalle}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'textoDetalle', this.value)"></td>
+                                    <td class="col-monto-mob text-right" style="font-weight: bold; color: ${j.totalNeto >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${(j.totalNeto >= 0 ? '$' : '-$') + Math.abs(j.totalNeto).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                    <td class="col-accion-mob text-center">
+                                        <button class="btn-restaurar-jornada" onclick="restaurarJornadaGuardada(${j.originalIndex})" title="Restaurar Jornada">🔄 Restaurar</button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                ${semana.jornadas.map(j => `
-                                    <tr>
-                                        <td class="col-dia-mob dia-semana-resumen">${j.diaCierre}</td>
-                                        <td class="col-detalle-mob"><input type="text" class="editable-input-fecha" value="${j.textoDetalle}" oninput="actualizarHistorialCampo(${j.originalIndex}, 'textoDetalle', this.value)"></td>
-                                        <td class="col-monto-mob text-right" style="font-weight: bold; color: ${j.totalNeto >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${(j.totalNeto >= 0 ? '$' : '-$') + Math.abs(j.totalNeto).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                                        <td class="col-accion-mob text-center">
-                                            <button class="btn-restaurar-jornada" onclick="restaurarJornadaGuardada(${j.originalIndex})" title="Restaurar Jornada">🔄 Restaurar</button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
             `;
             contenedor.appendChild(divAcordeon);
