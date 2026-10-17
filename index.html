@@ -855,15 +855,15 @@ ALTA D DOGERS MITAD (4) -105"></textarea>
                 let lineas = (reg.descripcion || '').split('\n').filter(l => l.trim() !== '');
                 if (!reg.lineasEstatus) reg.lineasEstatus = {};
 
-                desgloseHtml += `<div style="margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.15); border-radius: 6px; font-size: 11px;">`;
-                desgloseHtml += `<div style="font-weight: bold; margin-bottom: 4px; color: var(--text-muted);">Desglose de líneas:</div>`;
+                desgloseHtml += `<div style="margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.35); border-radius: 6px; font-size: 11px; width: 100%; box-sizing: border-box;">`;
+                desgloseHtml += `<div style="font-weight: bold; margin-bottom: 6px; color: #a0aec0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">Desglose de líneas:</div>`;
                 
                 lineas.forEach((lineaTexto, lIdx) => {
                     let estActual = reg.lineasEstatus[lIdx] || 'GANADA';
                     desgloseHtml += `
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 5px;">
-                            <span style="flex: 1; word-break: break-all;">${lineaTexto}</span>
-                            <select style="font-size: 10px; padding: 2px;" onchange="actualizarEstatusLinea(${index}, ${lIdx}, this.value)">
+                        <div style="margin-bottom: 8px; padding: 6px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                            <div style="font-weight: 600; color: #e2f0ea; margin-bottom: 4px; word-break: break-word; white-space: normal;">${lineaTexto}</div>
+                            <select style="font-size: 11px; padding: 3px 6px; width: 100%; border-radius: 4px; background: #1a202c; color: #fff; border: 1px solid #4a5568;" onchange="actualizarEstatusLinea(${index}, ${lIdx}, this.value)">
                                 <option value="GANADA" ${estActual === 'GANADA' ? 'selected' : ''}>✅ Ganada</option>
                                 <option value="PUSH" ${estActual === 'PUSH' ? 'selected' : ''}>🔄 Push (Empate)</option>
                                 <option value="PERDIDA" ${estActual === 'PERDIDA' ? 'selected' : ''}>❌ Perdida</option>
